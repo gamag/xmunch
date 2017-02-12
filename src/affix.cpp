@@ -28,13 +28,42 @@ using namespace xmunch;
 
 /* Setup */
 
-Affix::Affix(AffixGroup& g, String v, int sc, Char sn, bool sv, StringList e)
-	: group(g), value(v), score(sc), score_id(sn),
-	has_virtual_stem(sv), stem_endings(e) {
+Affix::Affix(
+		AffixGroup& grp,
+		String pref,
+		String suff,
+		StringList preplace,
+		StringList sreplace,
+		int sco,
+		Char scoid,
+		bool virt
+	) : group(grp), suffix(suff), prefix(pref), score(sco), score_id(scoid),
+		has_virtual_stem(virt) {
+	if (preplace.empty()) {
+		stem_beginnings = {""};
+	} else {
+		stem_beginnings = preplace;
+	}
+	if (sreplace.empty()) {
+		stem_endings = {""};
+	} else {
+		stem_endings = sreplace;
+	}
 }
 
 void Affix::setStemEndings(StringList e) {
-	stem_endings = e;
+	if (e.empty()) {
+		stem_endings = {""};
+	} else {
+		stem_endings = e;
+	}
+}
+void Affix::setStemBeginnings(StringList b) {
+	if (b.empty()) {
+		stem_beginnings = {""};
+	} else {
+		stem_beginnings = b;
+	}
 }
 
 /* Core */
@@ -45,18 +74,47 @@ void Affix::match(Index& words, WordList& vstems, Index& vindex, Word& w) {
 	}
 
 	const String& s = w.getWord();
-	auto m = std::mismatch(value.rbegin(), value.rend(), s.rbegin(), s.rend());
+	auto begin = s.begin();
+	auto end = s.end();
 
-	if (m.first != value.rend()) { // No match
+	if (!suffix.empty()) {
+		auto m = std::mismatch(
+				suffix.rbegin(),
+				suffix.rend(),
+				s.rbegin(),
+				s.rend()
+				);
+
+		if (m.first != suffix.rend()) { // No match
+			return;
+		}
+
+		end = m.second.base();
+	}
+
+	if (!prefix.empty()) {
+		auto m = std::mismatch(
+				prefix.begin(),
+				prefix.end(),
+				s.begin(),
+				s.end()
+				);
+
+		if (m.first != prefix.end()) { // No match
+			return;
+		}
+
+		begin = m.second;
+	}
+
+	if (begin >= end-1) { // Empty match or overlap
 		return;
 	}
 
-	String stem(s.begin(), m.second.base());
-	if (stem_endings.empty()) {
-		handleMatch(words, vstems, vindex, stem, w);
-	} else {
-		for (auto& e : stem_endings) {
-			handleMatch(words, vstems, vindex, stem + e, w);
+	String stem(begin, end);
+	for (auto& e : stem_endings) {
+		for (auto& b : stem_beginnings) {
+			handleMatch(words, vstems, vindex, b + stem + e, w);
 		}
 	}
 }
@@ -70,7 +128,7 @@ void Affix::handleMatch(
 ) {
 	Word * s;
 	if (words.count(stem) == 1) {
-		if (has_virtual_stem) { // don't "vitualize" a word from the word list.
+		if (has_virtual_stem) { // don't "virtualize" a word from the word list.
 			return;
 		}
 		s = &words.at(stem);
@@ -91,7 +149,12 @@ void Affix::handleMatch(
 /* Extra */
 
 void Affix::print() {
-	std::cerr << "AFF " << value << " (" << score_id << score << ") [";
+	std::cerr << "AFF " << prefix << ":" << suffix 
+		<< " (" << score_id << score << ") [";
+	for (auto& b : stem_beginnings) {
+		std::cerr << b << ',';
+	}
+	std::cerr << ":";
 	for (auto& e : stem_endings) {
 		std::cerr << e << ',';
 	}
@@ -131,19 +194,31 @@ void AffixGroup::addMinScore(int s, Char n) {
 }
 
 void AffixGroup::addAffix(
-					String value,
+					String prefix,
+					String suffix,
+					StringList preplace,
+					StringList sreplace,
 					int score,
-					Char sn,
-					StringList endings,
+					Char score_id,
 					bool as
 	) {
-	affixes.emplace_back(*this, value, score, sn, has_virtual_stem, endings); 
-	if (min_affix_score.count(sn) == 0) {
+	affixes.emplace_back(
+			*this,
+			prefix,
+			suffix,
+			preplace,
+			sreplace,
+			score,
+			score_id,
+			has_virtual_stem
+		);
+	if (min_affix_score.count(score_id) == 0) {
 		std::cerr << "Affix error: group: " << name <<
-			", affix: " << value << ", invalid score name " << sn << std::endl;
+			", affix: " << prefix << "-" << suffix 
+			<< ", invalid score name " << score_id << std::endl;
 	}
 	if (auto_score && as) {
-		min_affix_score[sn] += score;
+		min_affix_score[score_id] += score;
 	}
 }
 

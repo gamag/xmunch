@@ -42,6 +42,20 @@ namespace xmunch {
 
 			void skipWhite(bool no_newline = false);
 
+			// suffix shouldn't contain .
+			// . in prefix will be handled.
+			void handleAddPrefix(
+					AffixGroup& grp,
+					String prefix,
+					const String& suffix,
+					int score,
+					Char score_id,
+					const std::list<String>& beginnings,
+					const std::list<String>& endings,
+					bool auto_score
+				);
+
+			String readAffixString();
 			void readGroup();
 			void readGroupFlags(AffixGroup& grp);
 

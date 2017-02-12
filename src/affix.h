@@ -28,19 +28,31 @@ namespace xmunch {
 	class Affix {
 		AffixGroup& group;	
 
-		String value;
+		String suffix;
+		String prefix;
 
 		int score;
 		Char score_id;
 
 		bool has_virtual_stem;
 
+		StringList stem_beginnings;
 		StringList stem_endings;
 
 		public:
-			Affix(AffixGroup& g, String v, int sc, Char sn, bool sv, StringList e);
+			Affix(
+					AffixGroup& grp,
+					String pref,
+					String suff,
+					StringList preplace,
+					StringList sreplace,
+					int sco,
+					Char scoid,
+					bool virt
+				);
 
 			void setStemEndings(StringList e);
+			void setStemBeginnings(StringList b);
 
 			void match(Index& words, WordList& vstems, Index& vindex, Word& word);
 
@@ -79,10 +91,12 @@ namespace xmunch {
 			AffixGroup(int i, String n);
 
 			void addAffix(
-					String value,
+					String prefix,
+					String suffix,
+					StringList preplace,
+					StringList sreplace,
 					int score,
 					Char score_id,
-					StringList endings,
 					bool autoscore = true // Allow auto score.
 					);
 			void setVirtualStem(bool v);

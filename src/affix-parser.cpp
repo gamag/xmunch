@@ -42,11 +42,11 @@ void AffixParser::parse() {
 	while (src.peek() != 'A' && src && !src.eof()) {
 		stem_sep.push_back(src.get());
 	}
-	src.get(); // A
+	src.ignore(); // A
 	while (src.peek() != 'A' && src && !src.eof()) {
 		aff_sep.push_back(src.get());
 	}
-	src.get(); // A
+	src.ignore(); // A
 	while (!std::isspace(src.peek()) && src && !src.eof()) {
 		virt_mark.push_back(src.get());
 	}
@@ -160,12 +160,36 @@ void AffixParser::readGroupFlags(AffixGroup& grp) {
 }
 
 void AffixParser::readAffix(AffixGroup& grp) {
-	StringList endings = readEndings();
+
+	StringList beginnings = readEndings();
+	StringList endings;
+	if (src.peek() == ':') {
+		src.ignore();
+		skipWhite();
+		endings = readEndings();
+	}
 
 	skipWhite();
 
-	String name;
-	src >> name;
+	String prefix;
+	String suffix;
+
+	if (src.peek() == '-') {
+		src.ignore();
+	}
+	prefix = readAffixString();
+
+	if (src.peek() == '-') {
+		src.ignore();
+		if (!std::isspace(src.peek())) {
+			suffix = readAffixString();
+		}
+	} else {
+		suffix = std::move(prefix);
+		prefix.clear();
+		endings = std::move(beginnings);
+		beginnings.clear();
+	}
 
 	skipWhite();
 
@@ -173,7 +197,7 @@ void AffixParser::readAffix(AffixGroup& grp) {
 	Char score_id = '+';
 
 	if (src.peek() == '(') {
-		src.get();
+		src.ignore();
 
 		while (src && !src.eof()) {
 			skipWhite();
@@ -183,32 +207,103 @@ void AffixParser::readAffix(AffixGroup& grp) {
 				c = src.peek();
 				if (std::isalpha(c)) {
 					score_id = c;
-					src.get();
+					src.ignore();
 				}
 				continue;
 			} else if (c == ')') {
-				src.get();
+				src.ignore();
 				break;
 			} else {
 				std::cerr << "Affix error: expected ')' found " << c <<
-					"while parsing " << name << " in " << grp.getName() << std::endl;
+					"while parsing " << prefix << "-" << suffix <<
+					" in " << grp.getName() << std::endl;
 				break;
 			}
 		}
 	}
 
-	if (name[0] == '.') {
-		name.erase(0, 1);
+	if (suffix.front() == '.') {
+		suffix.erase(0, 1);
 		bool autoscore = true;
 		for (auto& e : endings) {
-			grp.addAffix(e + name, score, score_id, {e}, autoscore);
+			handleAddPrefix(
+					grp,
+					prefix,
+					e + suffix,
+					score,
+					score_id,
+					beginnings,
+					{e},
+					autoscore
+				);
 			autoscore = false;
 		}
 	} else {
-		grp.addAffix(name, score, score_id, endings);
+		handleAddPrefix(
+				grp,
+				prefix,
+				suffix,
+				score,
+				score_id,
+				beginnings,
+				endings,
+				true
+			);
 	}
 }
 
+void AffixParser::handleAddPrefix(
+					AffixGroup& grp,
+					String prefix,
+					const String& suffix,
+					int score,
+					Char score_id,
+					const std::list<String>& beginnings,
+					const std::list<String>& endings,
+					bool auto_score
+				) {
+	if (prefix.back() == '.') {
+		prefix.pop_back();
+		for (auto& b : beginnings) {
+			grp.addAffix(
+					prefix + b,
+					suffix,
+					{b},
+					endings,
+					score,
+					score_id,
+					auto_score
+					);
+			auto_score = false;
+		}
+	} else {
+		grp.addAffix(
+				prefix,
+				suffix,
+				beginnings,
+				endings,
+				score,
+				score_id,
+				auto_score
+				);
+	}
+}
+String AffixParser::readAffixString() {
+	String a("");
+	while (src && !src.eof()) {
+		switch (src.peek()) {
+			case '-':
+			case ' ':
+			case '\t':
+			case '\r':
+			case '\n':
+				return a;
+			default:
+				a.push_back(src.get());
+		}
+	}
+	return a;
+}
 
 StringList AffixParser::readEndings() {
 	StringList endings;
@@ -225,10 +320,24 @@ StringList AffixParser::readEndings() {
 				endings.push_back("");
 				return endings;
 			case ',':
-				endings.push_back(e);
+				if (e.empty()) {
+					std::cerr << "expected replacement definition, got ',', near " 
+						<< endings.front() << std::endl;
+				} else {
+					endings.push_back(e);
+				}
 				e = "";
 				skipWhite();
 				continue;
+			case ':':
+				src.putback(c);
+				if (e.empty()) {
+					std::cerr << "expected replacement definition, got ':', near " 
+						<< endings.front() << std::endl;
+				} else {
+					endings.push_back(e);
+				}
+				return endings;
 			case ' ':
 			case '\t':
 			case '\r':
@@ -237,7 +346,12 @@ StringList AffixParser::readEndings() {
 				if (src.peek() == ',') {
 					continue;
 				} else {
-					endings.push_back(e);
+					if (e.empty()) {
+						std::cerr << "expected ',' got " 
+							<< src.peek() << std::endl;
+					} else {
+						endings.push_back(e);
+					}
 					return endings;
 				}
 			default:
