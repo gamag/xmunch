@@ -19,6 +19,10 @@ incomplete affix definitions used with munch would never provide.
 xmunch has originally been written to improoving the georgien spell checking dictionary
 [https://github.com/gamag/ka_GE.spell]
 
+Note: At the moment, xmunch doesn't change the encoding of input, so make sure
+to use the same everywhere.  Internally 8 byte chars, so I'd suggest
+using UTF-8, maybe C-normalized.
+
 ## Build ##
 
 To build xmunch, you need a c++14 capable compiler and `make`.
@@ -57,11 +61,11 @@ W/A,A!
 # W/AAd
 
 # The for the affix definition syntax, you have to think the other way around as
-# when writing a .aff file. Think in terms of affixes (at the moment, xmunch
-# supports only postfixes) which are are stripped from the word and replaced by
-# an ending to form a stem. xmunch doesn't support regex conditions like in .aff
-# files (may be implemented later). 
+# when writing a .aff file. Think in terms of affixes which are are stripped from
+# the word and replaced by an ending to form a stem. xmunch doesn't support regex
+# conditions like in .aff files (may be implemented later). 
 
+# lets start with suffixes, the default case, to show the general syntax
 ## Basic affix group
 # The N correspond to the N in 
 # SPF N Y 5 
@@ -187,6 +191,35 @@ c   .u      (1b)
 # (1a 2b v)), then a form ending in a or i, and one ending in rr or in two of c, s
 # or u.
 
+## Prefixes
+# Until here, we only spoke of suffixes. The same functionality can be used on
+# prefixes too:
+PR (3) {
+a    b.-    (1)
+a    cc-    (2)
+.    f-     (1)
+.    abc-   (2)
+}
+# here, the - after the affix text marks the affix as prefix, everything else
+# works like above (the implicit score name has been used). You can use - in
+# front of the affix to mark it as suffix, but that is optional.
+
+## Circumfixes
+# In the same way as suffixes, circumfixes can be defined:
+CX {
+a:.    b-e
+a,b,c : x,y,z     beg.-.end
+. : .     abeg-aend
+}
+# here before the : the is the stem ending/affix replacement definition for the
+# prefix, after it the one for the suffix (they are both required), afterwards
+# we have prefix-suffix. This can of course be combined with everything
+# explained before like scoring and virtual stems.
+#
+# Note that there are no spaces allowed before and after the dash (-)
+#
+# Prefix, suffix and circumfix definitions can be mixed in one group.
+#
 ```
 
 ## License ##
