@@ -50,15 +50,15 @@ the explanations below.
 # use # for comments.
 
 # Output syntax: W [stem-affix-separator] A [affix-affix-separator] A
-# [virtual/forbidden marker] this is always required and indicates, how the
+# [virtual stem/needs affix marker] this is always required and indicates, how the
 # output file should be formatted. It will always have one word per line, and,
 # following the definition below, as stem will be separated form its affix marks
 # by a / different affix marks will be separated by a , and virtual stems
-# (forbidden words) will be on a single line followed by !  so for example
+# will be marked using '!'  so for example
 # 'house/n,p' 
 W/A,A!
 # For compatibility with de_DE.aff on my system, you would need
-# W/AAd
+# W/AAh
 
 # The for the affix definition syntax, you have to think the other way around as
 # when writing a .aff file. Think in terms of affixes which are are stripped from
@@ -107,7 +107,7 @@ x,y     .a  # here . is replaced by x or y before stripping the affix (xa or ya)
 # Here it would be useful to allow compression using abc as stem, but since this
 # abc is not in the word list, normal affix compression doesn't work. So we need
 # to add abc as virtual stem to the list and mark it as wrong using
-# FORBIDDENWORD or NEEDSAFFIX flag of hunspell for example, which is in this file defined to
+# NEEDSAFFIX flag of hunspell for example, which is in this file defined to
 # be !. Then we need to tell xmunch, that it is allowed to create stems if
 # needed: (V has the same meaning as N in the first rule)
 V (v) {
@@ -116,8 +116,7 @@ V (v) {
 .        cc
 }
 # this will result in 
-# abc/V
-# abc/!
+# abc/V!
 #
 # for affix definitions, generally the same syntax as in N is supported, but
 # note, that it might behave unexpected with virtual stems, since they are

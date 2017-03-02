@@ -77,10 +77,10 @@ namespace xmunch {
 					out << (first ? String("") : AffixGroup::getAffSep()) << a->getName();
 					first = false;
 				}
-				out << std::endl;
 				if (stem_of.front()->hasVirtualStem()) {
-					out << word << AffixGroup::getStemSep() << AffixGroup::getVirtMark() << std::endl;
+					out << (first ? String("") : AffixGroup::getAffSep()) << AffixGroup::getVirtMark();
 				}
+				out << std::endl;
 			}
 	};
 }
