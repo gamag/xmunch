@@ -107,7 +107,7 @@ x,y     .a  # here . is replaced by x or y before stripping the affix (xa or ya)
 # Here it would be useful to allow compression using abc as stem, but since this
 # abc is not in the word list, normal affix compression doesn't work. So we need
 # to add abc as virtual stem to the list and mark it as wrong using
-# NEEDSAFFIX flag of hunspell for example, which is in this file defined to
+# NEEDAFFIX flag of hunspell for example, which is in this file defined to
 # be !. Then we need to tell xmunch, that it is allowed to create stems if
 # needed: (V has the same meaning as N in the first rule)
 V (v) {

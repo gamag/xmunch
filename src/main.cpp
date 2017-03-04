@@ -47,7 +47,7 @@ void load_wordlist(std::istream& in, WordList& words, Index& index) {
 	} while (std::getline(in, l));
 }
 
-void work(std::istream& in, std::ifstream& aff, std::ostream& out) {
+void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt) {
 
 	WordList words;
 	Index index;
@@ -62,8 +62,10 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out) {
 	AffixParser afp(aff, affixes);
 	afp.parse();
 
-	for (auto& a : affixes) {
-		a.print();
+	if (pt) {
+		for (auto& a : affixes) {
+			a.print();
+		}
 	}
 
 	for (auto& a: affixes) {
@@ -84,16 +86,20 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out) {
 }
 
 void print_help() {
-	std::cerr << "Usage: xmunch wordlist affixes output\n"
-		<< "if output or word-list are -, read from/write to standard streams." << std::endl;
+	std::cerr << "Usage: xmunch wordlist affixes output [options]\n"
+		<< "if output or word-list are -, read from/write to standard streams.\n"
+		<< "--print-tree to print the parsed affix definitions to stderr" << std::endl;
 }
 
 int main(int argc, char * argv[]) {
-	if (argc != 4) {
+	bool print_tree = false;
+	if (argc == 5 && std::string(argv[4]) == "--print-tree") {
+		print_tree = true;
+	} else if (argc != 4) {
 		print_help();
 		return 1;
 	}
-	
+
 	std::istream* in;
 	std::ifstream* aff;
 	std::ostream* out;
@@ -138,7 +144,7 @@ int main(int argc, char * argv[]) {
 		}
 	}
 
-	work(*in, *aff, *out);
+	work(*in, *aff, *out, print_tree);
 
 	if (in != &std::cin) {
 		delete in;
