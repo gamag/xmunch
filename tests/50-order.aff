@@ -1,0 +1,15 @@
+W/A,A!
+
+s {
+a	.b
+}
+
+Sn { # should never be used, since s takes -ab already
+a	.b
+.	e
+}
+
+S (1) {
+a	.b
+.	x
+}

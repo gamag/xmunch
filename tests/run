@@ -1,0 +1,39 @@
+#!/bin/bash
+
+dir=$(dirname "$0")
+cd "$dir"
+
+let total=0 pass=0 fail=0
+
+for f in ./*.good; do
+	let total++
+	name=${f%.good}
+	echo "=== Test $name ==="
+	../xmunch "$name.wrd" "$name.aff" - --print-tree 2>"$name.err" | sort >"$name.out"
+	res=$(diff "$name.out" "$name.good")
+	if [[ $? -eq 0 ]]; then
+		let pass++
+		echo "... PASS ..."
+		echo
+		rm "$name.out" "$name.err"
+	else
+		let fail++
+		echo
+		echo "*** FAIL ***"
+		echo
+		echo -e "Command: cd "$dir"; ../xmunch '$name.wrd' '$name.aff' - | sort >'$name.out'; diff '$name.out' '$name.good'\n"
+		echo
+		echo "--- xmunch output ($name.err) ---"
+		cat "$name.err"
+		echo "--- diff output (< $name.out, > $name.good) ---"
+		echo "$res"
+		echo 
+		echo "************"
+		echo
+	fi
+done
+
+echo "=== Results ==="
+echo "$fail tests failed, $pass tests passed out of $total tests."
+
+[[ $fail -eq 0 ]];
