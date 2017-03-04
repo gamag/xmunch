@@ -12,10 +12,10 @@ MAIN = xmunch
 
 .PHONY: depend clean
 
-all: $(MAIN)
+all: $(MAIN) test
 	@echo "xmunch build."
 
-$(MAIN): $(OBJS) 
+$(MAIN): $(OBJS)
 	@echo Linking...
 	@$(CXX) $(CXXFLAGS) -o $(MAIN) $(OBJS) $(LIBS)
 
@@ -26,6 +26,10 @@ $(MAIN): $(OBJS)
 		sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 			-e '/^$$/ d' -e 's/$$/ :/' < $*.d >> $*.P; \
 		rm -f "$*.d"
+
+test: $(MAIN) tests/*.*
+	@echo "running tests"
+	@tests/run
 
 clean:
 	@rm src/*.o  $(MAIN)
