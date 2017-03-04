@@ -318,6 +318,7 @@ StringList AffixParser::readEndings() {
 						<< endings.front() << std::endl;
 				}
 				endings.push_back("");
+				skipWhite();
 				return endings;
 			case ',':
 				if (e.empty()) {
