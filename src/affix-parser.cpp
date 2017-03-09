@@ -183,14 +183,16 @@ void AffixParser::readAffix(AffixGroup& grp) {
 		src.ignore();
 		if (!std::isspace(src.peek())) {
 			suffix = readAffixString();
+		} else {
+			endings.clear();
 		}
 	} else {
 		suffix = std::move(prefix);
 		prefix.clear();
 		if (endings.empty()) {
 			endings = std::move(beginnings);
-			beginnings.clear();
 		}
+		beginnings.clear();
 	}
 
 	skipWhite();
