@@ -187,8 +187,10 @@ void AffixParser::readAffix(AffixGroup& grp) {
 	} else {
 		suffix = std::move(prefix);
 		prefix.clear();
-		endings = std::move(beginnings);
-		beginnings.clear();
+		if (endings.empty()) {
+			endings = std::move(beginnings);
+			beginnings.clear();
+		}
 	}
 
 	skipWhite();
