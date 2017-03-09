@@ -169,7 +169,7 @@ void Affix::print() {
 
 AffixGroup::AffixGroup(int i, String n) 
 	: id(i), name(n), auto_score(true), has_virtual_stem(false) {
-		min_affix_score['+'] = 0;
+		min_affix_score['*'] = 0;
 }
 
 String AffixGroup::stem_separator("/");

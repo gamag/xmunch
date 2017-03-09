@@ -170,9 +170,9 @@ b   .u      (1)
 # wbrr
 # wb
 # will be compressed by xmunch to ob/B and wb/B even though there was only
-# one match - since the total match score is still >= 2. 
+# one match - since the total match score is still >= 2.
 #
-# In case this is not flexible enough to avoid false-positives, scores can be
+# If this is not flexible enough to avoid false-positives, scores can be
 # grouped, and the score limit has to be reached in each group for the stem to
 # be used.
 C (1a 2b) {
@@ -189,6 +189,9 @@ c   .u      (1b)
 # this means, we require the stem to be in the word list (can be avoided using
 # (1a 2b v)), then a form ending in a or i, and one ending in rr or in two of c, s
 # or u.
+#
+# It is possible to use negative scores to forbid some forms to exist in the
+# dictionary.
 
 ## Prefixes
 # Until here, we only spoke of suffixes. The same functionality can be used on

@@ -144,7 +144,7 @@ void AffixParser::readGroupFlags(AffixGroup& grp) {
 				grp.setVirtualStem(true);
 				continue;
 		}
-		if (std::isdigit(c)) {
+		if (std::isdigit(c) || c == '-' || c == '+') {
 			src.putback(c);
 			int sc;
 			src >> sc;
@@ -152,7 +152,7 @@ void AffixParser::readGroupFlags(AffixGroup& grp) {
 			if (std::isalpha(c)) {
 				src.get();
 			} else {
-				c = '+';
+				c = '*';
 			}
 			grp.addMinScore(sc, c);
 		}
@@ -194,7 +194,7 @@ void AffixParser::readAffix(AffixGroup& grp) {
 	skipWhite();
 
 	int score = 1;
-	Char score_id = '+';
+	Char score_id = '*';
 
 	if (src.peek() == '(') {
 		src.ignore();
@@ -202,7 +202,7 @@ void AffixParser::readAffix(AffixGroup& grp) {
 		while (src && !src.eof()) {
 			skipWhite();
 			Char c = src.peek();
-			if (std::isdigit(c)) {
+			if (std::isdigit(c) || c == '-' || c == '+') {
 				src >> score;
 				c = src.peek();
 				if (std::isalpha(c)) {
