@@ -27,8 +27,6 @@
 
 namespace xmunch {
 
-	class Affix;
-
 	struct AffixedWord {
 		Word& word;
 		Affix& affix;
@@ -46,8 +44,10 @@ namespace xmunch {
 
 		std::list<AffixGroup*> stem_of;
 
+		StemType is_type;
+
 		public:
-			Word(String w) : word(w) {};
+			Word(String w) : word(w), has_stem(false), is_type(StemType::NORMAL) {};
 
 			~Word() {};
 
@@ -65,6 +65,9 @@ namespace xmunch {
 			void setStemFor(AffixGroup& affix) { stem_of.push_back(&affix); }
 			void setHasStem(bool hs) { has_stem = hs; }
 
+			void setStemType(StemType t) { is_type = t; }
+			StemType getStemType() { return is_type; }
+
 			void format(std::ostream& out) {
 				out << word;
 				if (stem_of.empty()) {
@@ -77,7 +80,7 @@ namespace xmunch {
 					out << (first ? String("") : AffixGroup::getAffSep()) << a->getName();
 					first = false;
 				}
-				if (stem_of.front()->hasVirtualStem()) {
+				if (is_type == StemType::VIRTUAL || is_type == StemType::OPTIONAL) {
 					out << (first ? String("") : AffixGroup::getAffSep()) << AffixGroup::getVirtMark();
 				}
 				out << std::endl;

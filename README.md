@@ -109,14 +109,25 @@ x,y     .a  # here . is replaced by x or y before stripping the affix (xa or ya)
 # to add abc as virtual stem to the list and mark it as wrong using
 # NEEDAFFIX flag of hunspell for example, which is in this file defined to
 # be !. Then we need to tell xmunch, that it is allowed to create stems if
-# needed: (V has the same meaning as N in the first rule)
-V (v) {
+# needed: (W has the same meaning as N in the first rule)
+W (v) {
 .        aa
 .        bb
 .        cc
 }
 # this will result in 
-# abc/V!
+# abc/W!
+#
+# Instead of v, two other modifiers can be used: c and o. c lets xmunch create
+# a missing stem without adding a virtual/need-affix flag, and o (for optional
+# stem) is something in between v and c. If a matching stem is only virtual, 
+# it will be used, as opposed to c. If needed, a new virtual stem is created
+# like with v, but if a matching stem is found in the word list, that one is
+# used without need-affix flag (v would not match in this case). 
+#
+# One normal stem can match groups with c and o at the same time and might be
+# created if needed (note that normal (without v,c,o) affix groups won't use 
+# this stem). A virtual stem can only be used by groups with v and o.
 #
 # for affix definitions, generally the same syntax as in N is supported, but
 # note, that it might behave unexpected with virtual stems, since they are

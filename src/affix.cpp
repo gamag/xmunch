@@ -36,9 +36,9 @@ Affix::Affix(
 		StringList sreplace,
 		int sco,
 		Char scoid,
-		bool virt
+		StemType st
 	) : group(grp), suffix(suff), prefix(pref), score(sco), score_id(scoid),
-		has_virtual_stem(virt) {
+		stem_type(st) {
 	if (preplace.empty()) {
 		stem_beginnings = {""};
 	} else {
@@ -128,14 +128,16 @@ void Affix::handleMatch(
 ) {
 	Word * s;
 	if (words.count(stem) == 1) {
-		if (has_virtual_stem) { // don't "virtualize" a word from the word list.
+		if (stem_type == StemType::VIRTUAL) {
+			// We are not allowed to "virtualize" this word -> no match.
 			return;
 		}
 		s = &words.at(stem);
-	} else if (has_virtual_stem) {
+	} else if (stem_type != StemType::NORMAL) {
 		if (vindex.count(stem) == 0) {
 			vstems.emplace_back(stem);
 			vindex.emplace(stem, vstems.back());
+			vstems.back().setStemType(StemType::UNDEFINED);
 		}
 		s = &vindex.at(stem);
 	} else {
@@ -158,7 +160,7 @@ void Affix::print() {
 	for (auto& e : stem_endings) {
 		std::cerr << e << ',';
 	}
-	std::cerr << "] " << (has_virtual_stem ? 'V' : ' ') << std::endl; 
+	std::cerr << "] " << static_cast<char>(stem_type) << std::endl; 
 }
 
 
@@ -168,7 +170,7 @@ void Affix::print() {
 /* Setup */
 
 AffixGroup::AffixGroup(int i, String n) 
-	: id(i), name(n), auto_score(true), has_virtual_stem(false) {
+	: id(i), name(n), auto_score(true), stem_type(StemType::NORMAL) {
 		min_affix_score['*'] = 0;
 }
 
@@ -182,8 +184,8 @@ void AffixGroup::setMarkers(const String& ss, const String& ns, const String& vm
 }
 
 
-void AffixGroup::setVirtualStem(bool v) {
-	has_virtual_stem = v;
+void AffixGroup::setStemType(StemType t) {
+	stem_type = t;
 }
 
 void AffixGroup::addMinScore(int s, Char n) {
@@ -210,7 +212,7 @@ void AffixGroup::addAffix(
 			sreplace,
 			score,
 			score_id,
-			has_virtual_stem
+			stem_type
 		);
 	if (min_affix_score.count(score_id) == 0) {
 		std::cerr << "Affix error: group: " << name <<
@@ -232,6 +234,10 @@ void AffixGroup::match(Index& words, WordList& vstems, Index& vindex) {
 		}
 	}
 	for (auto& m : match_scores) {
+		if (!isMatchingStemType(m.first->getStemType())) {
+			continue;
+		}
+
 		bool valid = true;
 		for (auto& s : m.second) {
 			if (min_affix_score.at(s.first) > s.second) {
@@ -258,8 +264,42 @@ void AffixGroup::countMatch(Word& stem, int score, Char score_id) {
 
 void AffixGroup::confirmStem(Word& stem) {
 	stem.setStemFor(*this);
+	stem.setStemType(getNewStemType(stem.getStemType()));
 	for (auto& w : stem.getAffixesByGroup(*this)) {
 		w.word.setHasStem(true);
+	}
+}
+
+bool AffixGroup::isMatchingStemType(StemType t) {
+	return t == stem_type ||
+		t == StemType::UNDEFINED ||
+		t == StemType::OPTIONAL ||
+		(t == StemType::CREATE && stem_type != StemType::VIRTUAL) ||
+		(t == StemType::NORMAL && stem_type != StemType::VIRTUAL) ||
+		(t == StemType::VIRTUAL && stem_type != StemType::NORMAL &&
+			stem_type != StemType::CREATE);
+}
+
+StemType AffixGroup::getNewStemType(StemType t) {
+	switch (t) {
+		case StemType::NORMAL:
+		case StemType::VIRTUAL:
+			return t;
+		case StemType::CREATE:
+			if (stem_type == StemType::OPTIONAL) {
+				return StemType::NORMAL;
+			} else {
+				return stem_type;
+			}
+		case StemType::OPTIONAL:
+			if (stem_type == StemType::CREATE) {
+				return StemType::NORMAL;
+			} else {
+				return stem_type;
+			}
+		case StemType::UNDEFINED:
+		default:
+			return stem_type;
 	}
 }
 
@@ -270,7 +310,7 @@ void AffixGroup::print() {
 	for (auto& c : min_affix_score) {
 		std::cerr << c.first << c.second << ",";
 	}
-	std::cerr << ") " << (has_virtual_stem ? 'V' : ' ') << " {" << std::endl;
+	std::cerr << ") " << static_cast<char>(stem_type) << " {" << std::endl;
 	for (auto& a : affixes) {
 		a.print();
 	}

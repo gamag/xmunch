@@ -139,9 +139,21 @@ void AffixParser::readGroupFlags(AffixGroup& grp) {
 						"'" << std::endl;
 				}
 				return;
+			case 'n':
+			case 'N':
+				grp.setStemType(StemType::NORMAL);
+				continue;
+			case 'c':
+			case 'C':
+				grp.setStemType(StemType::CREATE);
+				continue;
+			case 'o':
+			case 'O':
+				grp.setStemType(StemType::OPTIONAL);
+				continue;
 			case 'v':
 			case 'V':
-				grp.setVirtualStem(true);
+				grp.setStemType(StemType::VIRTUAL);
 				continue;
 		}
 		if (std::isdigit(c) || c == '-' || c == '+') {

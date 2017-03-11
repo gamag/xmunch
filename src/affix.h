@@ -25,6 +25,14 @@
 
 namespace xmunch {
 
+	enum class StemType : char {
+		VIRTUAL = 'v', // Stem must not exist in word list.
+		OPTIONAL = 'o', // If stem is missing, use a virtual one.
+		CREATE = 'c', // If stem is missing, create it.
+		NORMAL = 'n',
+		UNDEFINED = 'u' // Only to be used in word objects
+	};
+
 	class Affix {
 		AffixGroup& group;	
 
@@ -34,7 +42,7 @@ namespace xmunch {
 		int score;
 		Char score_id;
 
-		bool has_virtual_stem;
+		StemType stem_type;
 
 		StringList stem_beginnings;
 		StringList stem_endings;
@@ -48,7 +56,7 @@ namespace xmunch {
 					StringList sreplace,
 					int sco,
 					Char scoid,
-					bool virt
+					StemType stype
 				);
 
 			void setStemEndings(StringList e);
@@ -76,7 +84,7 @@ namespace xmunch {
 		bool auto_score;
 		std::map<Char, int> min_affix_score;
 
-		bool has_virtual_stem;
+		StemType stem_type;
 		
 		std::list<Affix> affixes;
 
@@ -99,7 +107,7 @@ namespace xmunch {
 					Char score_id,
 					bool autoscore = true // Allow auto score.
 					);
-			void setVirtualStem(bool v);
+			void setStemType(StemType t);
 			void addMinScore(int s, Char n);
 
 			static void setMarkers(
@@ -109,7 +117,7 @@ namespace xmunch {
 					);
 
 			const String& getName() { return name; };
-			bool hasVirtualStem()   { return has_virtual_stem; }
+			StemType getStemType()   { return stem_type; }
 			static const String& getStemSep()  { return stem_separator; };
 			static const String& getAffSep()   { return name_separator; };
 			static const String& getVirtMark() { return virtual_marker; };
@@ -117,6 +125,9 @@ namespace xmunch {
 			void match(Index& words, WordList& vstems, Index& vindex);
 			void countMatch(Word& stem, int score, Char score_id);
 			void confirmStem(Word& stem);
+
+			bool isMatchingStemType(StemType tword);
+			StemType getNewStemType(StemType told);
 
 			void print();
 	};
