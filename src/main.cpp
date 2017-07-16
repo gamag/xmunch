@@ -47,7 +47,7 @@ void load_wordlist(std::istream& in, WordList& words, Index& index) {
 	} while (std::getline(in, l));
 }
 
-void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt) {
+void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt, bool nc) {
 
 	WordList words;
 	Index index;
@@ -62,6 +62,7 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt) {
 	AffixParser afp(aff, affixes);
 	afp.parse();
 
+	// print affix tree if the user wants to see it.
 	if (pt) {
 		for (auto& a : affixes) {
 			a.print();
@@ -88,69 +89,83 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt) {
 void print_help() {
 	std::cerr << "Usage: xmunch wordlist affixes output [options]\n"
 		<< "if output or word-list are -, read from/write to standard streams.\n"
-		<< "--print-tree to print the parsed affix definitions to stderr" << std::endl;
+		<< "--print-tree to print the parsed affix definitions to stderr\n"
+		<< "--no-compression to do no affix compression, output derivatives grouped with their stems\n" << std::endl;
 }
 
 int main(int argc, char * argv[]) {
 	bool print_tree = false;
-	if (argc == 5 && std::string(argv[4]) == "--print-tree") {
-		print_tree = true;
-	} else if (argc != 4) {
-		print_help();
-		return 1;
-	}
+	bool no_compression = false;
 
-	std::istream* in;
-	std::ifstream* aff;
-	std::ostream* out;
+	std::istream* in = nullptr;
+	std::ifstream* aff = nullptr;
+	std::ostream* out = nullptr;
 
-	std::string a = argv[1];
-	if (a == "--help" || a == "-h") {
-		print_help();
-		return 0;
-	} else if (a == "-") {
-		in = &std::cin;
-	} else {
-		in = new std::ifstream(a);
-		if (in->fail()) {
-			std::cerr << "couldn't open " << a << std::endl;
-			return 1;
+	// parse arguments
+	int fi = 0;
+	for (int i = 1; i < argc; i++) {
+		std::string a(argv[i]);
+
+		if (a == "--help" || a == "-h") {
+			print_help();
+			return 0;
+		} else if (a == "--print-tree") {
+			print_tree = true;
+			continue;
+		} else if (a == "--no-compression") {
+			no_compression = true;
+			continue;
 		}
-	}
 
-	a = argv[2];
-	if (a == "--help" || a == "-h") {
-		print_help();
-		return 0;
-	} else {
-		aff = new std::ifstream(a);
-		if (aff->fail()) {
-			std::cerr << "couldn't open " << a << std::endl;
-			return 1;
+		switch (fi) {
+			case 0: // word list
+				if (a == "-") {
+					in = &std::cin;
+				} else {
+					in = new std::ifstream(a);
+					if (in->fail()) {
+						std::cerr << "couldn't open word list: " << a << std::endl;
+						return 1;
+					}
+				}
+				break;
+			case 1: // affix definitions
+				aff = new std::ifstream(a);
+				if (aff->fail()) {
+					std::cerr << "couldn't open affix definition file: " << a << std::endl;
+					return 1;
+				}
+				break;
+			case 2: // output
+				if (a == "-") {
+					out = &std::cout;
+				} else {
+					out = new std::ofstream(a);
+					if (out->fail()) {
+						std::cerr << "couldn't open output file: " << a << std::endl;
+						return 1;
+					}
+				}
+				break;
+			default:
+				std::cout << "Too many arguments." << std::endl;
+				print_help();
+				return 1;
 		}
+		fi++;
 	}
 
-	a = argv[3];
-	if (a == "--help" || a == "-h") {
-		print_help();
-		return 0;
-	} else if (a == "-") {
-		out = &std::cout;
-	} else {
-		out = new std::ofstream(a);
-		if (out->fail()) {
-			std::cerr << "couldn't open " << a << std::endl;
-			return 1;
-		}
-	}
+	// do the work
+	work(*in, *aff, *out, print_tree, no_compression);
 
-	work(*in, *aff, *out, print_tree);
-
-	if (in != &std::cin) {
+	// clean up
+	if (in && in != &std::cin) {
 		delete in;
 	}
-	delete aff;
-	if (out != &std::cout) {
+	if (aff) {
+		delete aff;
+	}
+	if (out && out != &std::cout) {
 		delete out;
 	}
 }
