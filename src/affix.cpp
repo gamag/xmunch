@@ -107,7 +107,7 @@ void Affix::match(Index& words, WordList& vstems, Index& vindex, Word& w) {
 		begin = m.second;
 	}
 
-	if (begin >= end-1) { // Empty match or overlap
+	if (begin >= end) { // Empty match or overlap
 		return;
 	}
 

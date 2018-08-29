@@ -35,7 +35,7 @@ void load_wordlist(std::istream& in, WordList& words, Index& index) {
 	try {
 		wordcount = std::stoi(l) + 1000;
 		std::getline(in, l);
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		std::cerr << "WARNING, dictionary file should contain the number of words in the first line." << std::endl;
 	}
 
