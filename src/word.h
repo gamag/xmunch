@@ -1,5 +1,5 @@
 /**
- * This file is part of xmunch	
+ * This file is part of xmunch
  * Copyright (C) 2017 Gabriel Margiani
  *
  * xmunch is free software: you can redistribute it and/or modify
@@ -71,7 +71,7 @@ namespace xmunch {
 			void format(std::ostream& out) {
 				out << word;
 				if (stem_of.empty()) {
-					out << std::endl; 
+					out << std::endl;
 					return;
 				}
 				out << AffixGroup::getStemSep();
@@ -84,6 +84,29 @@ namespace xmunch {
 					out << (first ? String("") : AffixGroup::getAffSep()) << AffixGroup::getVirtMark();
 				}
 				out << std::endl;
+			}
+
+			void format_uncompressed(std::ostream& out) {
+				out << word;
+				if (stem_of.empty()) {
+					out << ";" << std::endl;
+					return;
+				}
+
+				if (is_type == StemType::VIRTUAL || is_type == StemType::OPTIONAL) {
+					out << "@virtual";
+				}
+				out << " {" << std::endl;
+
+				for (auto ag : stem_of) {
+					out << "\t" << ag->getName() << " {" << std::endl;
+					for (auto a : getAffixesByGroup(*ag)) {
+						out << "\t\t" << a.word.word << std::endl;
+					}
+					out << "\t}" << std::endl;
+				}
+
+				out << "};" << std::endl;
 			}
 	};
 }

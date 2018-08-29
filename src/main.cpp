@@ -47,7 +47,7 @@ void load_wordlist(std::istream& in, WordList& words, Index& index) {
 	} while (std::getline(in, l));
 }
 
-void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt, bool nc) {
+void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool print_tree, bool no_compression) {
 
 	WordList words;
 	Index index;
@@ -62,8 +62,7 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt, bool
 	AffixParser afp(aff, affixes);
 	afp.parse();
 
-	// print affix tree if the user wants to see it.
-	if (pt) {
+	if (print_tree) {
 		for (auto& a : affixes) {
 			a.print();
 		}
@@ -77,10 +76,19 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool pt, bool
 		if (w.hasStem()) {
 			continue;
 		}
-		w.format(out);
+		if (no_compression) {
+			w.format_uncompressed(out);
+		} else {
+			w.format(out);
+		}
 	}
 	for (auto& w : virtual_stems) {
-		if (w.isStem()) {
+		if (!w.isStem()) {
+			continue;
+		}
+		if (no_compression) {
+			w.format_uncompressed(out);
+		} else {
 			w.format(out);
 		}
 	}
