@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <set>
 
 using namespace xmunch;
 
@@ -151,7 +152,7 @@ void Affix::handleMatch(
 /* Extra */
 
 void Affix::print() {
-	std::cerr << "AFF " << prefix << ":" << suffix 
+	std::cerr << "AFF " << prefix << ":" << suffix
 		<< " (" << score_id << score << ") [";
 	for (auto& b : stem_beginnings) {
 		std::cerr << b << ',';
@@ -160,7 +161,7 @@ void Affix::print() {
 	for (auto& e : stem_endings) {
 		std::cerr << e << ',';
 	}
-	std::cerr << "] " << static_cast<char>(stem_type) << std::endl; 
+	std::cerr << "] " << static_cast<char>(stem_type) << std::endl;
 }
 
 
@@ -169,7 +170,7 @@ void Affix::print() {
 
 /* Setup */
 
-AffixGroup::AffixGroup(int i, String n) 
+AffixGroup::AffixGroup(int i, String n)
 	: id(i), name(n), auto_score(true), stem_type(StemType::NORMAL) {
 		min_affix_score['*'] = 0;
 }
@@ -216,7 +217,7 @@ void AffixGroup::addAffix(
 		);
 	if (min_affix_score.count(score_id) == 0) {
 		std::cerr << "Affix error: group: " << name <<
-			", affix: " << prefix << "-" << suffix 
+			", affix: " << prefix << "-" << suffix
 			<< ", invalid score name " << score_id << std::endl;
 	}
 	if (auto_score && as) {
@@ -226,28 +227,59 @@ void AffixGroup::addAffix(
 
 
 /* Core */
-
 void AffixGroup::match(Index& words, WordList& vstems, Index& vindex) {
 	for (auto& w : words) {
 		for (auto& a : affixes) {
 			a.match(words, vstems, vindex, w.second);
 		}
 	}
+
+	// To handle interlinked stems (a is stem of b is stem of c), we sort by
+	// negative total score and stem length. This allows us prioritize correctly and
+	// skip used words with hasStem later.
+	std::set<std::tuple<int, int, Word*, std::map<Char, int>* > > sorted_scores;
 	for (auto& m : match_scores) {
 		if (!isMatchingStemType(m.first->getStemType())) {
 			continue;
 		}
 
 		bool valid = true;
+		int tot_score = 0;
 		for (auto& s : m.second) {
 			if (min_affix_score.at(s.first) > s.second) {
 				valid = false;
 				break;
 			}
+			tot_score += s.second;
 		}
 
 		if (valid) {
-			confirmStem(*m.first);
+			sorted_scores.emplace(-tot_score, m.first->getWord().length(), m.first, &m.second);
+		}
+	}
+
+	for (auto& m : sorted_scores) {
+		Word* w = std::get<2>(m);
+
+		if (w->hasStem()) {
+			continue;
+		}
+
+		// Recheck validity if a derived word is a stem on its own now.
+		bool valid = true;
+		for (auto& c : w->getAffixesByGroup(*this)) {
+			if (c.word.isStem()) {
+				Char cn = c.affix.getScoreId();
+				int score = std::get<3>(m)->at(cn) - c.affix.getScore();
+				if (min_affix_score.at(cn) > score) {
+					valid = false;
+					break;
+				}
+			}
+		}
+
+		if (valid) {
+			confirmStem(*w);
 		}
 	}
 }
@@ -266,7 +298,9 @@ void AffixGroup::confirmStem(Word& stem) {
 	stem.setStemFor(*this);
 	stem.setStemType(getNewStemType(stem.getStemType()));
 	for (auto& w : stem.getAffixesByGroup(*this)) {
-		w.word.setHasStem(true);
+		if (!w.word.isStem()) {
+			w.word.setHasStem(true);
+		}
 	}
 }
 

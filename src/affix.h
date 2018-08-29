@@ -62,6 +62,9 @@ namespace xmunch {
 			void setStemEndings(StringList e);
 			void setStemBeginnings(StringList b);
 
+			Char getScoreId() { return score_id; }
+			int getScore() { return score; }
+
 			void match(Index& words, WordList& vstems, Index& vindex, Word& word);
 
 			void print();
