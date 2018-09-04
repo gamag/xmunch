@@ -22,16 +22,16 @@
 #include "xmunch.h"
 #include "affix.h"
 #include <map>
-#include <list>
+#include <set>
 #include <fstream>
 
 namespace xmunch {
 
 	struct AffixedWord {
 		Word& word;
-		Affix& affix;
+		const Affix& affix;
 
-		AffixedWord(Word& w, Affix& f) : word(w), affix(f) {}
+		AffixedWord(Word& w, const Affix& f) : word(w), affix(f) {}
 	};
 
 	class Word {
@@ -42,7 +42,7 @@ namespace xmunch {
 
 		std::map<AffixGroup*, AffixedWordList> affixes;
 
-		std::list<AffixGroup*> stem_of;
+		std::set<AffixGroup*> stem_of;
 
 		StemType is_type;
 
@@ -51,22 +51,23 @@ namespace xmunch {
 
 			~Word() {};
 
-			String& getWord() { return word; }
+			const String& getWord() const { return word; }
 
-			bool isStem() { return !stem_of.empty(); }
-			bool hasStem() { return has_stem; }
-			bool matchable() { return stem_of.empty() && !has_stem; }
+			bool isStem() const { return !stem_of.empty(); }
+			bool isStemOf(AffixGroup& group) const { return stem_of.count(&group) == 1; }
+			bool hasStem() const { return has_stem; }
+			bool matchable() const { return stem_of.empty() && !has_stem; }
 
-			void addAffix(AffixGroup& g, Affix& f, Word& w) { affixes[&g].emplace_back(w, f); }
+			void addAffix(AffixGroup& g, const Affix& f, Word& w) { affixes[&g].emplace_back(w, f); }
 
-			bool hasAffixOfGroup(AffixGroup& group) { return affixes.count(&group) > 1; }
-			AffixedWordList& getAffixesByGroup(AffixGroup& group) { return affixes.at(&group); }
+			bool hasAffixOfGroup(AffixGroup& group) const { return affixes.count(&group) == 1 && affixes.at(&group).size() != 0; }
+			AffixedWordList& getAffixesByGroup(AffixGroup& group) { return affixes[&group]; }
 
-			void setStemFor(AffixGroup& affix) { stem_of.push_back(&affix); }
+			void setStemFor(AffixGroup& affix) { stem_of.insert(&affix); }
 			void setHasStem(bool hs) { has_stem = hs; }
 
 			void setStemType(StemType t) { is_type = t; }
-			StemType getStemType() { return is_type; }
+			StemType getStemType() const { return is_type; }
 
 			void format(std::ostream& out) {
 				out << word;
@@ -93,14 +94,22 @@ namespace xmunch {
 					return;
 				}
 
-				if (is_type == StemType::VIRTUAL || is_type == StemType::OPTIONAL) {
-					out << "@virtual";
+				if (is_type == StemType::VIRTUAL) {
+					out << "@V";
+				} else if (is_type == StemType::OPTIONAL) {
+					out << "@O";
+				} else if (is_type == StemType::CREATE) {
+					out << "@C";
 				}
 				out << " {" << std::endl;
 
 				for (auto ag : stem_of) {
 					out << "\t" << ag->getName() << " {" << std::endl;
 					for (auto a : getAffixesByGroup(*ag)) {
+						if (a.word.isStem()) {
+							continue;
+						}
+
 						out << "\t\t" << a.word.word << std::endl;
 					}
 					out << "\t}" << std::endl;

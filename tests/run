@@ -8,8 +8,10 @@ let total=0 pass=0 fail=0
 for f in ./*.good; do
 	let total++
 	name=${f%.good}
+	pm=""
+	[[ -f $name.pm ]] && pm=$name.pm
 	echo "=== Test $name ==="
-	../xmunch "$name.wrd" "$name.aff" - --print-tree 2>"$name.err" | sort >"$name.out"
+	../xmunch "$name.wrd" "$name.aff" - $pm --print-tree 2>"$name.err" | sort >"$name.out"
 	res=$(diff "$name.out" "$name.good")
 	if [[ $? -eq 0 ]]; then
 		let pass++

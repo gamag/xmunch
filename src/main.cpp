@@ -18,12 +18,14 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 
 #include "xmunch.h"
 #include "word.h"
 #include "affix.h"
 #include "affix-parser.h"
+#include "premunched-loader.h"
 
 using namespace xmunch;
 
@@ -47,7 +49,7 @@ void load_wordlist(std::istream& in, WordList& words, Index& index) {
 	} while (std::getline(in, l));
 }
 
-void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool print_tree, bool no_compression) {
+void work(std::istream& in, std::ifstream& aff, std::ostream& out, std::ifstream* pm, bool print_tree, bool no_compression) {
 
 	WordList words;
 	Index index;
@@ -61,6 +63,11 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool print_tr
 
 	AffixParser afp(aff, affixes);
 	afp.parse();
+
+	if (pm != nullptr) {
+		PremunchedLoader pml(*pm, affixes, words, index, virtual_stems, virtual_index);
+		pml.load();
+	}
 
 	if (print_tree) {
 		for (auto& a : affixes) {
@@ -95,8 +102,9 @@ void work(std::istream& in, std::ifstream& aff, std::ostream& out, bool print_tr
 }
 
 void print_help() {
-	std::cerr << "Usage: xmunch wordlist affixes output [options]\n"
+	std::cerr << "Usage: xmunch wordlist affixes output [premunched] [options]\n"
 		<< "if output or word-list are -, read from/write to standard streams.\n"
+		<< "premunched is an optional file containing already munched data in the format of --no-compression output\n "
 		<< "--print-tree to print the parsed affix definitions to stderr\n"
 		<< "--no-compression to do no affix compression, output derivatives grouped with their stems\n" << std::endl;
 }
@@ -108,6 +116,7 @@ int main(int argc, char * argv[]) {
 	std::istream* in = nullptr;
 	std::ifstream* aff = nullptr;
 	std::ostream* out = nullptr;
+	std::ifstream* pm = nullptr;
 
 	// parse arguments
 	int fi = 0;
@@ -155,6 +164,13 @@ int main(int argc, char * argv[]) {
 					}
 				}
 				break;
+			case 3: // premunched data
+				pm = new std::ifstream(a);
+				if (pm->fail()) {
+					std::cerr << "couldn't open premunched input file: " << a << std::endl;
+					return 1;
+				}
+				break;
 			default:
 				std::cout << "Too many arguments." << std::endl;
 				print_help();
@@ -164,7 +180,7 @@ int main(int argc, char * argv[]) {
 	}
 
 	// do the work
-	work(*in, *aff, *out, print_tree, no_compression);
+	work(*in, *aff, *out, pm, print_tree, no_compression);
 
 	// clean up
 	if (in && in != &std::cin) {

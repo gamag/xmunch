@@ -243,6 +243,13 @@ void AffixGroup::match(Index& words, WordList& vstems, Index& vindex) {
 			continue;
 		}
 
+		// Check if the stem is already confirmed as valid (by premunched data).
+		// In that case just confirm all matches.
+		if (m.first->isStemOf(*this)) {
+			confirmStem(*m.first);
+			continue;
+		}
+
 		bool valid = true;
 		int tot_score = 0;
 		for (auto& s : m.second) {

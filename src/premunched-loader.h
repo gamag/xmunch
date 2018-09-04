@@ -1,6 +1,6 @@
 /**
  * This file is part of xmunch
- * Copyright (C) 2017 Gabriel Margiani
+ * Copyright (C) 2018 Gabriel Margiani
  *
  * xmunch is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,16 +16,22 @@
  * along with xmunch.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#ifndef _XMUNCH_AFFIX_PARSER_H_
-#define _XMUNCH_AFFIX_PARSER_H_ 
+#ifndef _XMUNCH_PREMUNCHED_LOADER_H_
+#define _XMUNCH_PREMUNCHED_LOADER_H_ 
 
 #include "xmunch.h"
 
 #include <fstream>
 
 namespace xmunch {
-	class AffixParser {
+	class PremunchedLoader {
 		std::ifstream& src;
+
+		WordList& words;
+		Index& index;
+
+		WordList& vwords;
+		Index& vindex;
 
 		AffixGroupList& affixes;
 
@@ -33,39 +39,32 @@ namespace xmunch {
 
 		public:
 
-			AffixParser(std::ifstream& s, AffixGroupList& a);
-			~AffixParser();
+			PremunchedLoader(
+					std::ifstream& input,
+					AffixGroupList& a,
+					WordList& w,
+					Index& wi,
+					WordList& virtual_w,
+					Index& virtual_wi
+				);
 
-			void parse();
+			~PremunchedLoader();
+
+			void load();
 
 		protected:
 
 			void skipWhite(bool no_newline = false);
 
-			// suffix shouldn't contain .
-			// . in prefix will be handled.
-			void handleAddPrefix(
-					AffixGroup& grp,
-					String prefix,
-					const String& suffix,
-					int score,
-					Char score_id,
-					const std::list<String>& beginnings,
-					const std::list<String>& endings,
-					bool auto_score
-				);
+			Word* loadWord();
 
-			String readAffixString();
-			void readGroup();
-			void readGroupFlags(AffixGroup& grp);
+			String readWord();
 
-			void readAffix(AffixGroup& grp);
-
-			StringList readEndings();
-
+			void loadDerivedList(Word& stem);
 	};
 
-	void skip_over_whitespace(std::istream& s, bool no_newline = false);
+	// Implemented in affix_parser.cpp
+	void skip_over_whitespace(std::istream& s, bool no_newline /* = false */);
 }
 
-#endif /* ifndef _XMUNCH_AFFIX_PARSER_H_ */
+#endif /* ifndef _XMUNCH_PREMUNCHED_LOADER_H_ */

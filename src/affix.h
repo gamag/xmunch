@@ -62,8 +62,8 @@ namespace xmunch {
 			void setStemEndings(StringList e);
 			void setStemBeginnings(StringList b);
 
-			Char getScoreId() { return score_id; }
-			int getScore() { return score; }
+			Char getScoreId() const { return score_id; }
+			int getScore() const { return score; }
 
 			void match(Index& words, WordList& vstems, Index& vindex, Word& word);
 
@@ -119,8 +119,8 @@ namespace xmunch {
 					const String& vm
 					);
 
-			const String& getName() { return name; };
-			StemType getStemType()   { return stem_type; }
+			const String& getName() const { return name; };
+			StemType getStemType()  const { return stem_type; }
 			static const String& getStemSep()  { return stem_separator; };
 			static const String& getAffSep()   { return name_separator; };
 			static const String& getVirtMark() { return virtual_marker; };

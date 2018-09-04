@@ -60,37 +60,8 @@ void AffixParser::parse() {
 	}
 }
 
-void AffixParser::skipWhite(bool nonl) {
-	std::string l;
-	int c;
-	while (src && !src.eof()) {
-		c = src.peek();
-
-		if (nonl) {
-			if (c == ' ' || c == '\t') {
-				src.get();
-				continue;
-			} else {
-				return;
-			}
-		}
-
-		switch (c) {
-			case '#':
-				std::getline(src, l);
-				continue;
-			case ' ':
-			case '\t':
-			case '\v':
-			case '\n':
-			case '\r':
-			case '\f':
-				src.get();
-				continue;
-			default:
-				return;
-		}
-	}
+void AffixParser::skipWhite(bool neol) {
+	skip_over_whitespace(src, neol);
 }
 
 void AffixParser::readGroup() {
@@ -378,3 +349,35 @@ StringList AffixParser::readEndings() {
 	return endings;
 }
 
+void xmunch::skip_over_whitespace(std::istream& src, bool nonl) {
+	std::string l;
+	int c;
+	while (src && !src.eof()) {
+		c = src.peek();
+
+		switch (c) {
+			case '#':
+				std::getline(src, l);
+				if (nonl) {
+					src.putback('\n');
+					return;
+				}
+				continue;
+			case ' ':
+			case '\t':
+				src.get();
+				continue;
+			case '\v':
+			case '\n':
+			case '\r':
+			case '\f':
+				if (nonl) {
+					return;
+				}
+				src.get();
+				continue;
+			default:
+				return;
+		}
+	}
+}
